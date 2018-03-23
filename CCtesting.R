@@ -1,4 +1,5 @@
-library(purrr)
+#library(purrr)
+library(keras)
 
 splitData <- function(df, percent) {
   ## 75% of the sample size
