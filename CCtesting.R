@@ -1,4 +1,3 @@
-#library(purrr)
 library(keras)
 
 splitData <- function(df, percent) {
@@ -14,13 +13,18 @@ splitData <- function(df, percent) {
   
   return(list("train" = data.matrix(train_df), "test" = data.matrix(test_df)))
 }
+#   Original Data Set
+#data = read.csv("carCrashData.csv")
 
+# Cleaned carCrashData to convert severity 5 to 0, 6 to 4, and NA's to 0.
+data = read.csv("carCrashDataCleaned.csv")
 
-data = read.csv("carCrashData.csv")
+#x_data = subset(data, select=c("dvcat","weight","airbag","seatbelt","frontal","sex",
+#                              "ageOFocc","yearacc","yearVeh","abcat","occRole","deploy","injSeverity"))
 
-x_data = subset(data, select=c("dvcat","weight","airbag","seatbelt","frontal","sex",
-                               "ageOFocc","yearacc","yearVeh","abcat","occRole","deploy","injSeverity"))
-y_data = subset(data, select=c("dead"))
+x_data = subset(data, select=c("dvcat","weight", "dead", "airbag","seatbelt","frontal","sex", "ageOFocc","yearacc","yearVeh","abcat","occRole","deploy"))
+
+y_data = subset(data, select=c("injSeverity"))
 ncol(y_data)
 
 #split the data amont training and testing
@@ -33,15 +37,8 @@ y_data$test = as.vector(y_data$test)
 
 
 #convert one dimensional array to a categorical matrix
-y_data$train <- to_categorical(y_data$train, 3)
-y_data$train <-y_data$train[,-1]
-y_data$test <- to_categorical(y_data$test, 3)
-y_data$test <-y_data$test[,-1]
-
-print(y_data$train)
-print(y_data$test)
-print(x_data$train)
-print(x_data$test)
+y_data$train <- to_categorical(y_data$train, 5)
+y_data$test <- to_categorical(y_data$test, 5)
 
 
 #model
@@ -51,16 +48,18 @@ model %>%
   layer_dropout(rate = 0.4) %>%
   layer_dense(units = 128, activation = 'relu') %>%
   layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 2, activation = 'softmax')
+  layer_dense(units = 5, activation = 'softmax') # increased our units to 5 to reflect all categories of injSeverity
 
 summary(model)
+
 
 #compile
 model %>% compile(
   loss = 'categorical_crossentropy',
-  optimizer = optimizer_rmsprop(),
+  optimizer = optimizer_sgd(lr=0.0001), # changed optimizer optimizer_rmsprop() to optimizer_sgd(lr0.0001)
   metrics = c('accuracy')
 )
+
 
 #train and eval
 history <- model %>% fit(
@@ -80,9 +79,9 @@ print(x_data$train[1, ])
 print(y_data$train[1, ])
 
 B = matrix( 
-  c( 2, 19.287, 2,1, 1,1,80,1998,1981,3,1,0,3), 
+  c( 1, 19.287, 2,1, 1,1,80,1998,1981,3,1,0,3), 
   nrow=1, 
-  ncol=13) 
+  ncol=1) 
 print(B)
 
 print(model %>% predict_classes(B))
