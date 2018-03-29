@@ -84,7 +84,7 @@ print(y_data$train[1, ])
 
 # test case line 15
 B = matrix (
-  c(3, 19.287, 2,1, 1,1,80,3,1,0,3),
+  c(3, 89., 2,1, 1,1,80,3,1,0,3),
   nrow=1,
   ncol=9)
 print(B)
