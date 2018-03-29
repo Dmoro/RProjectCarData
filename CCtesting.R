@@ -22,32 +22,34 @@ data = read.csv("carCrashDataCleaned.csv")
 #x_data = subset(data, select=c("dvcat","weight","airbag","seatbelt","frontal","sex",
 #                              "ageOFocc","yearacc","yearVeh","abcat","occRole","deploy","injSeverity"))
 
-x_data = subset(data, select=c("dvcat","weight", "dead", "airbag","seatbelt","frontal","sex", "ageOFocc","yearacc","yearVeh","abcat","occRole","deploy"))
+x_data = subset(data, select=c("dvcat", "dead", "airbag","seatbelt","frontal","sex","abcat","occRole","deploy"))
 
 y_data = subset(data, select=c("injSeverity"))
-ncol(y_data)
+nrow(y_data) # equals 26,217 colums with row injSeverity
 
-#split the data amont training and testing
+#split the data into list(matrix,matrix) with 80% training and 20% testing respectively.
 x_data = splitData(x_data, 0.8)
 y_data = splitData(y_data, 0.8) 
+
 
 #convert the y data to a one dimensional array
 y_data$train = as.vector(y_data$train)
 y_data$test = as.vector(y_data$test)
 
-
-#convert one dimensional array to a categorical matrix
+#convert one dimensional array to a categorical matrix via one-hot encoding
 y_data$train <- to_categorical(y_data$train, 5)
 y_data$test <- to_categorical(y_data$test, 5)
-
 
 #model
 model <- keras_model_sequential()
 model %>%
-  layer_dense(units = 1000, activation = 'relu', input_shape = c(ncol(x_data$train))) %>%
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = 'relu') %>%
-  layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu', input_shape = c(ncol(x_data$train))) %>%
+  #layer_dropout(rate = 0.4) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  #layer_dropout(rate = 0.3) %>%
+  layer_dense(units = 100, activation = 'relu') %>%
+  layer_dense(units = 100, activation = 'relu') %>%
   layer_dense(units = 5, activation = 'softmax') # increased our units to 5 to reflect all categories of injSeverity
 
 summary(model)
@@ -56,10 +58,12 @@ summary(model)
 #compile
 model %>% compile(
   loss = 'categorical_crossentropy',
-  optimizer = optimizer_sgd(lr=0.0001), # changed optimizer optimizer_rmsprop() to optimizer_sgd(lr0.0001)
+  optimizer = optimizer_sgd(lr=0.01), # changed optimizer optimizer_rmsprop() to optimizer_sgd(lr0.0001)
+  #optimizer = optimizer_rmsprop(),  # MNIST optimizer
   metrics = c('accuracy')
 )
 
+print(x_data)
 
 #train and eval
 history <- model %>% fit(
@@ -78,10 +82,11 @@ print(y_prediction)
 print(x_data$train[1, ])
 print(y_data$train[1, ])
 
-B = matrix( 
-  c( 1, 19.287, 2,1, 1,1,80,1998,1981,3,1,0,3), 
-  nrow=1, 
-  ncol=1) 
+# test case line 15
+B = matrix (
+  c(3, 19.287, 2,1, 1,1,80,3,1,0,3),
+  nrow=1,
+  ncol=9)
 print(B)
 
 print(model %>% predict_classes(B))
