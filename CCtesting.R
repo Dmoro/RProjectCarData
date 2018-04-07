@@ -11,7 +11,7 @@ splitData <- function(df, percent, sample) {
 }
 
 # Cleaned carCrashData to convert severity 5 to 0, 6 to 4, and NA's to 0.
-data = read.csv("carCrashDataCleaned.csv")
+data = read.csv("carCrashDataCleanedNEW.csv")
 print(data)
 
 x_data = subset(data, select=c("dvcat","dead", "airbag","seatbelt","frontal","sex",
@@ -37,8 +37,9 @@ y_data$test = as.vector(y_data$test)
 
 #convert one dimensional array to a categorical matrix via one-hot encoding
 temp = y_data$test
-y_data$train <- to_categorical(y_data$train, 5)
-y_data$test <- to_categorical(y_data$test, 5)
+print(y_data$train)
+y_data$train <- to_categorical(y_data$train, 4)
+y_data$test <- to_categorical(y_data$test, 4)
 
 
 
@@ -48,15 +49,15 @@ print(y_data$test[1:10,])
 #model
 model <- keras_model_sequential()
 model %>%
-  layer_dense(units = 128, activation = 'relu', input_shape = c(ncol(x_data$train)), kernel_initializer = "random_uniform") %>%
+  layer_dense(units = 50, activation = 'relu', input_shape = c(ncol(x_data$train)), kernel_initializer = "random_uniform") %>%
   layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  layer_dense(units = 50, activation = 'relu', kernel_initializer = "random_uniform") %>%
   layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  layer_dense(units = 50, activation = 'relu', kernel_initializer = "random_uniform") %>%
   layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
-  layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 5, activation = 'softmax') # increased our units to 5 to reflect all categories of injSeverity
+  #layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  #layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 4, activation = 'softmax') # increased our units to 5 to reflect all categories of injSeverity
 
 summary(model)
 
@@ -75,7 +76,7 @@ print(x_data$train[1:10])
 #train and eval
 history <- model %>% fit(
   x_data$train, y_data$train,
-  epochs = 30, batch_size = 100,
+  epochs = 50, batch_size = 100,
   validation_split = 0.2
 )
 
@@ -104,16 +105,16 @@ for ( c in 1:ncol(m)) {
 print(m)
 
 p <- plot_ly(
-  x = c("0", "1", "2","3","4"), y = c("0", "1", "2","3","4"),
-  z = m, type = "heatmap" 
-) %>%
-  layout(
-    title = "The Heatmap",
+  x = c("0", "1", "2","3"), y = c("0", "1", "2","3"),
+  z = m, type = "heatmap" )
+ #%>%
+#  layout(
+#title = "The Heatmap",
     
-      xaxis = list(title = "reference"),
-      yaxis = list(title = "prediction"),
+ #     xaxis = list(title = "reference"),
+  #    yaxis = list(title = "prediction"),
     
-    )
+  #  )
 print(p)
 
 
