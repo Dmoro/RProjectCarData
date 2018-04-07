@@ -1,5 +1,7 @@
 library(keras)
-
+library(caret)
+library(e1071)
+library(plotly)
 splitData <- function(df, percent, sample) {
   train_ind <- sample
   train_df <-  data.frame(df[train_ind, ])
@@ -12,15 +14,15 @@ splitData <- function(df, percent, sample) {
 data = read.csv("carCrashDataCleaned.csv")
 print(data)
 
-x_data = subset(data, select=c("dvcat", "dead", "airbag","seatbelt","frontal","sex",
+x_data = subset(data, select=c("dvcat","dead", "airbag","seatbelt","frontal","sex",
                                "ageOFocc","abcat","occRole","deploy", 'ageVeh'))
 
-#x_data = subset(data, select=c("dvcat", "dead", "airbag","seatbelt","frontal","sex","abcat","occRole","deploy"))
+#x_data = subset(data, select=c("abcat","airbag","seatbelt","dvcat","sex","ageVeh","occRole"))
 
 y_data = subset(data, select=c("injSeverity"))
 nrow(y_data) # equals 26,217 colums with row injSeverity
 
-#split the data into list(matrix,matrix) with 80% training and 20% testing respectively.
+#split the data into list(matrix,matrix) with 70% training and 30% testing respectively.
 set.seed(123)
 percent = 0.7
 smp_size <- floor(percent * nrow(x_data))
@@ -34,8 +36,11 @@ y_data$train = as.vector(y_data$train)
 y_data$test = as.vector(y_data$test)
 
 #convert one dimensional array to a categorical matrix via one-hot encoding
+temp = y_data$test
 y_data$train <- to_categorical(y_data$train, 5)
 y_data$test <- to_categorical(y_data$test, 5)
+
+
 
 print(x_data$train[1:10,])
 print(y_data$test[1:10,])
@@ -43,11 +48,14 @@ print(y_data$test[1:10,])
 #model
 model <- keras_model_sequential()
 model %>%
-  layer_dense(units = 20, activation = 'relu', input_shape = c(ncol(x_data$train)), kernel_initializer = "random_uniform") %>%
+  layer_dense(units = 128, activation = 'relu', input_shape = c(ncol(x_data$train)), kernel_initializer = "random_uniform") %>%
   layer_dropout(rate = 0.1) %>%
-  layer_dense(units = 20, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
   layer_dropout(rate = 0.1) %>%
-
+  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  layer_dropout(rate = 0.1) %>%
+  layer_dense(units = 128, activation = 'relu', kernel_initializer = "random_uniform") %>%
+  layer_dropout(rate = 0.1) %>%
   layer_dense(units = 5, activation = 'softmax') # increased our units to 5 to reflect all categories of injSeverity
 
 summary(model)
@@ -77,9 +85,37 @@ model %>% evaluate(x_data$test, y_data$test)
 
 y_prediction = model %>% predict_classes(x_data$test)
 print(y_prediction[1:10000])
+print(y_data$test)
 
+cm = confusionMatrix(as.factor(y_prediction), as.factor(temp), positive = NULL, dnn =c("Prediction","Reference"))
+print(cm$table)
 print(x_data$train[1, ])
 print(y_data$train[1, ])
+
+m <- cm$table
+
+for ( c in 1:ncol(m)) {
+  c_sum = sum(m[,c])
+  for (r in 1:length(m[,c])) {
+    m[r,c] = m[r,c] / c_sum
+  }
+}
+
+print(m)
+
+p <- plot_ly(
+  x = c("0", "1", "2","3","4"), y = c("0", "1", "2","3","4"),
+  z = m, type = "heatmap" 
+) %>%
+  layout(
+    title = "The Heatmap",
+    
+      xaxis = list(title = "reference"),
+      yaxis = list(title = "prediction"),
+    
+    )
+print(p)
+
 
 numcorrect = 0
 numtests = 1000
